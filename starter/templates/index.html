@@ -41,6 +41,33 @@
       <button id="check-solution" type="button">Check Solution</button>
     </div>
     <p id="message" role="status" aria-live="polite"></p>
+    <form id="score-form" class="score-form" hidden>
+      <label for="player-name">Add your name to the leaderboard</label>
+      <div class="score-entry">
+        <input id="player-name" name="player-name" type="text" maxlength="24" autocomplete="name" required>
+        <button type="submit">Save Time</button>
+      </div>
+    </form>
+    <section class="leaderboard" aria-labelledby="leaderboard-title">
+      <div class="leaderboard-heading">
+        <h2 id="leaderboard-title">Top 10 Fastest</h2>
+        <span>All difficulties</span>
+      </div>
+      <div class="leaderboard-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">#</th>
+              <th scope="col">Player</th>
+              <th scope="col">Time</th>
+              <th scope="col">Level</th>
+              <th scope="col">Hints</th>
+            </tr>
+          </thead>
+          <tbody id="leaderboard-entries"></tbody>
+        </table>
+      </div>
+    </section>
   </main>
   <script src="/static/main.js"></script>
 </body>
