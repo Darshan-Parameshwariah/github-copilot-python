@@ -24,6 +24,61 @@ def is_safe(board, row, col, num):
                 return False
     return True
 
+def count_solutions(board, limit=2):
+    if limit <= 0:
+        return 0
+
+    for row in range(SIZE):
+        for col in range(SIZE):
+            value = board[row][col]
+            if value == EMPTY:
+                continue
+            if not 1 <= value <= SIZE:
+                return 0
+            board[row][col] = EMPTY
+            valid = is_safe(board, row, col, value)
+            board[row][col] = value
+            if not valid:
+                return 0
+
+    def search():
+        best_cell = None
+        best_candidates = None
+
+        for row in range(SIZE):
+            for col in range(SIZE):
+                if board[row][col] != EMPTY:
+                    continue
+
+                candidates = [
+                    num for num in range(1, SIZE + 1)
+                    if is_safe(board, row, col, num)
+                ]
+                if not candidates:
+                    return 0
+                if best_candidates is None or len(candidates) < len(best_candidates):
+                    best_cell = (row, col)
+                    best_candidates = candidates
+                    if len(candidates) == 1:
+                        break
+            if best_candidates is not None and len(best_candidates) == 1:
+                break
+
+        if best_cell is None:
+            return 1
+
+        row, col = best_cell
+        solutions = 0
+        for candidate in best_candidates:
+            board[row][col] = candidate
+            solutions += search()
+            board[row][col] = EMPTY
+            if solutions >= limit:
+                return solutions
+        return solutions
+
+    return search()
+
 def fill_board(board):
     for row in range(SIZE):
         for col in range(SIZE):
@@ -40,13 +95,24 @@ def fill_board(board):
     return True
 
 def remove_cells(board, clues):
-    attempts = SIZE * SIZE - clues
-    while attempts > 0:
-        row = random.randrange(SIZE)
-        col = random.randrange(SIZE)
-        if board[row][col] != EMPTY:
-            board[row][col] = EMPTY
-            attempts -= 1
+    cells = [(row, col) for row in range(SIZE) for col in range(SIZE)]
+    random.shuffle(cells)
+    clue_count = sum(cell != EMPTY for row in board for cell in row)
+
+    for row, col in cells:
+        if clue_count <= clues:
+            break
+        value = board[row][col]
+        if value == EMPTY:
+            continue
+
+        board[row][col] = EMPTY
+        if count_solutions(board) == 1:
+            clue_count -= 1
+        else:
+            board[row][col] = value
+
+    return clue_count
 
 def generate_puzzle(clues=35):
     board = create_empty_board()
