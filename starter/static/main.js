@@ -2,6 +2,40 @@
 const SIZE = 9;
 let puzzle = [];
 let validationRequest = 0;
+let gameRequest = 0;
+let gameStartedAt = null;
+let elapsedSeconds = 0;
+let timerInterval = null;
+
+function updateTimer() {
+  if (gameStartedAt !== null) {
+    elapsedSeconds = Math.floor((Date.now() - gameStartedAt) / 1000);
+  }
+  const hours = Math.floor(elapsedSeconds / 3600);
+  const minutes = Math.floor((elapsedSeconds % 3600) / 60);
+  const seconds = elapsedSeconds % 60;
+  const formatted = hours > 0
+    ? `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
+    : `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+  document.getElementById('game-timer').textContent = formatted;
+}
+
+function stopTimer() {
+  if (timerInterval !== null) {
+    clearInterval(timerInterval);
+    timerInterval = null;
+  }
+  updateTimer();
+  gameStartedAt = null;
+}
+
+function startTimer() {
+  stopTimer();
+  elapsedSeconds = 0;
+  gameStartedAt = Date.now();
+  updateTimer();
+  timerInterval = setInterval(updateTimer, 250);
+}
 
 function collectBoard(inputs) {
   const board = [];
@@ -63,14 +97,33 @@ function renderPuzzle(puz) {
 }
 
 async function newGame() {
+  const currentGameRequest = ++gameRequest;
   validationRequest++;
-  const res = await fetch('/new');
-  const data = await res.json();
-  renderPuzzle(data.puzzle);
-  document.getElementById('message').innerText = '';
+  stopTimer();
+  elapsedSeconds = 0;
+  updateTimer();
+  const message = document.getElementById('message');
+  message.textContent = '';
+  const difficulty = document.getElementById('difficulty').value;
+  try {
+    const res = await fetch(`/new?difficulty=${encodeURIComponent(difficulty)}`);
+    const data = await res.json();
+    if (currentGameRequest !== gameRequest) return;
+    if (!res.ok || data.error) throw new Error(data.error || 'Unable to start a new game.');
+    renderPuzzle(data.puzzle);
+    document.getElementById('current-difficulty').textContent =
+      data.difficulty.charAt(0).toUpperCase() + data.difficulty.slice(1);
+    message.textContent = '';
+    startTimer();
+  } catch {
+    if (currentGameRequest !== gameRequest) return;
+    message.style.color = '#b42318';
+    message.textContent = 'Unable to start a new game. Please try again.';
+  }
 }
 
 async function checkSolution(showStatus = true) {
+    stopTimer();
   const boardDiv = document.getElementById('sudoku-board');
   const inputs = boardDiv.getElementsByTagName('input');
   const board = collectBoard(inputs);

@@ -2,17 +2,45 @@
 <html>
 <head>
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Sudoku Game</title>
   <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body>
-  <h1>Sudoku Game</h1>
-  <div id="sudoku-board"></div>
-  <div class="controls">
-    <button id="new-game">New Game</button>
-    <button id="check-solution">Check Solution</button>
-    <span id="message"></span>
-  </div>
+  <main class="game-shell">
+    <header class="game-header">
+      <div>
+        <p class="eyebrow">Number logic</p>
+        <h1>Sudoku</h1>
+      </div>
+      <div class="game-details">
+        <label class="difficulty-control" for="difficulty">
+          <span>New game level</span>
+          <select id="difficulty">
+            <option value="easy">Easy</option>
+            <option value="medium" selected>Medium</option>
+            <option value="hard">Hard</option>
+          </select>
+        </label>
+        <div class="game-stat">
+          <span class="stat-label">Current game</span>
+          <span id="current-difficulty" class="stat-value">Medium</span>
+        </div>
+        <div class="game-stat timer-stat">
+          <span class="stat-label">Time</span>
+          <output id="game-timer" class="stat-value" aria-label="Elapsed time" aria-live="off">00:00</output>
+        </div>
+      </div>
+    </header>
+    <section class="board-section" aria-label="Sudoku puzzle">
+      <div id="sudoku-board"></div>
+    </section>
+    <div class="controls">
+      <button id="new-game" type="button">New Game</button>
+      <button id="check-solution" type="button">Check Solution</button>
+    </div>
+    <p id="message" role="status" aria-live="polite"></p>
+  </main>
   <script src="/static/main.js"></script>
 </body>
 </html>

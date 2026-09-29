@@ -57,6 +57,21 @@ def test_new_accepts_difficulty_query_parameter(client, monkeypatch):
     assert calls == ["hard"]
 
 
+def test_new_associates_selected_difficulty_with_current_game(client, monkeypatch):
+    puzzle = [[0] * 9 for _ in range(9)]
+    solution = [[1] * 9 for _ in range(9)]
+    monkeypatch.setattr(
+        "app.sudoku_logic.generate_puzzle",
+        lambda difficulty: (puzzle, solution),
+    )
+
+    response = client.get("/new?difficulty=hard")
+
+    assert response.status_code == 200
+    assert response.get_json() == {"puzzle": puzzle, "difficulty": "hard"}
+    assert app_module.CURRENT["difficulty"] == "hard"
+
+
 def test_new_rejects_unknown_difficulty(client):
     response = client.get("/new?difficulty=expert")
 

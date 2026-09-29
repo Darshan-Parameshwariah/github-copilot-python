@@ -7,7 +7,8 @@ app = Flask(__name__)
 # Keep a simple in-memory store for current puzzle and solution
 CURRENT = {
     'puzzle': None,
-    'solution': None
+    'solution': None,
+    'difficulty': None,
 }
 
 @app.route('/')
@@ -23,7 +24,8 @@ def new_game():
     puzzle, solution = sudoku_logic.generate_puzzle(difficulty)
     CURRENT['puzzle'] = puzzle
     CURRENT['solution'] = solution
-    return jsonify({'puzzle': puzzle})
+    CURRENT['difficulty'] = difficulty
+    return jsonify({'puzzle': puzzle, 'difficulty': difficulty})
 
 @app.route('/check', methods=['POST'])
 def check_solution():
