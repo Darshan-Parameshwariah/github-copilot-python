@@ -70,6 +70,7 @@ def test_new_associates_selected_difficulty_with_current_game(client, monkeypatc
     assert response.status_code == 200
     assert response.get_json() == {"puzzle": puzzle, "difficulty": "hard"}
     assert app_module.CURRENT["difficulty"] == "hard"
+    assert app_module.CURRENT["hint_count"] == 0
 
 
 def test_new_rejects_unknown_difficulty(client):
@@ -77,6 +78,57 @@ def test_new_rejects_unknown_difficulty(client):
 
     assert response.status_code == 400
     assert response.get_json() == {"error": "Unknown difficulty: expert"}
+
+
+def test_hint_fills_first_empty_puzzle_cell_and_tracks_count(client, monkeypatch):
+    puzzle = [[0] * 9 for _ in range(9)]
+    puzzle[0][0] = 9
+    solution = [[(row + col) % 9 + 1 for col in range(9)] for row in range(9)]
+    monkeypatch.setitem(app_module.CURRENT, "puzzle", puzzle)
+    monkeypatch.setitem(app_module.CURRENT, "solution", solution)
+    monkeypatch.setitem(app_module.CURRENT, "hint_count", 0)
+    board = [[0] * 9 for _ in range(9)]
+    board[0][0] = 9
+    board[0][1] = 7
+
+    response = client.post("/hint", json={"board": board})
+
+    assert response.status_code == 200
+    assert response.get_json() == {
+        "row": 0,
+        "col": 2,
+        "value": solution[0][2],
+        "hint_count": 1,
+    }
+    assert puzzle[0][0] == 9
+    assert app_module.CURRENT["hint_count"] == 1
+
+
+def test_hint_rejects_invalid_board_without_incrementing_count(client, monkeypatch):
+    monkeypatch.setitem(app_module.CURRENT, "puzzle", [[0] * 9 for _ in range(9)])
+    monkeypatch.setitem(app_module.CURRENT, "solution", [[1] * 9 for _ in range(9)])
+    monkeypatch.setitem(app_module.CURRENT, "hint_count", 0)
+
+    response = client.post("/hint", json={"board": [[10] * 9 for _ in range(9)]})
+
+    assert response.status_code == 400
+    assert response.get_json() == {
+        "error": "Board must be a 9x9 grid of numbers from 0 to 9"
+    }
+    assert app_module.CURRENT["hint_count"] == 0
+
+
+def test_hint_returns_error_when_no_blank_cell_is_available(client, monkeypatch):
+    puzzle = [[1] * 9 for _ in range(9)]
+    monkeypatch.setitem(app_module.CURRENT, "puzzle", puzzle)
+    monkeypatch.setitem(app_module.CURRENT, "solution", puzzle)
+    monkeypatch.setitem(app_module.CURRENT, "hint_count", 0)
+
+    response = client.post("/hint", json={"board": puzzle})
+
+    assert response.status_code == 400
+    assert response.get_json() == {"error": "No empty cells available for a hint"}
+    assert app_module.CURRENT["hint_count"] == 0
 
 
 def test_check_reports_incorrect_cells_and_completion(client, monkeypatch):

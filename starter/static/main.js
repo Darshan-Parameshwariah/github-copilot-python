@@ -122,8 +122,8 @@ async function newGame() {
   }
 }
 
-async function checkSolution(showStatus = true) {
-    stopTimer();
+async function checkSolution(showStatus = true, stopClock = true) {
+  if (stopClock) stopTimer();
   const boardDiv = document.getElementById('sudoku-board');
   const inputs = boardDiv.getElementsByTagName('input');
   const board = collectBoard(inputs);
@@ -164,9 +164,38 @@ async function checkSolution(showStatus = true) {
   }
 }
 
+async function getHint() {
+  const boardDiv = document.getElementById('sudoku-board');
+  const inputs = boardDiv.getElementsByTagName('input');
+  const message = document.getElementById('message');
+  try {
+    const res = await fetch('/hint', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({board: collectBoard(inputs)})
+    });
+    const data = await res.json();
+    if (!res.ok || data.error) throw new Error(data.error || 'Unable to get a hint.');
+
+    const input = inputs[data.row * SIZE + data.col];
+    input.value = data.value;
+    input.disabled = true;
+    input.classList.add('hinted');
+    await checkSolution(false, false);
+    if (!message.textContent || message.textContent === 'Keep going; the puzzle is not complete yet.') {
+      message.textContent = `Hint used (${data.hint_count}).`;
+      message.style.color = '#126b5b';
+    }
+  } catch (error) {
+    message.style.color = '#b42318';
+    message.textContent = error.message;
+  }
+}
+
 // Wire buttons
 window.addEventListener('load', () => {
   document.getElementById('new-game').addEventListener('click', newGame);
+  document.getElementById('get-hint').addEventListener('click', getHint);
   document.getElementById('check-solution').addEventListener('click', checkSolution);
   // initialize
   newGame();

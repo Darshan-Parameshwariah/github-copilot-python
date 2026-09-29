@@ -140,6 +140,12 @@ select {
     font-weight: 700;
 }
 
+.sudoku-cell.hinted {
+    background: #f8e8b8;
+    color: #684914;
+    font-weight: 700;
+}
+
 .sudoku-cell.incorrect {
     background: #fbded9;
     color: #a53124;
@@ -235,6 +241,11 @@ select:focus-visible {
     .sudoku-cell.prefilled {
         background: #33413c;
         color: #f0f5f2;
+    }
+
+    .sudoku-cell.hinted {
+        background: #66552e;
+        color: #fff0bf;
     }
 
     .sudoku-cell.incorrect {
