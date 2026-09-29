@@ -1,3 +1,5 @@
+import pytest
+
 import sudoku_logic
 
 
@@ -38,3 +40,29 @@ def test_remove_cells_preserves_unique_solution_and_returns_actual_count(monkeyp
     assert clue_count == sum(cell != 0 for row in board for cell in row)
     assert clue_count > 0
     assert sudoku_logic.count_solutions(board) == 1
+
+
+@pytest.mark.parametrize("difficulty, expected_clues", [
+    ("easy", 40),
+    ("medium", 32),
+    ("hard", 26),
+])
+def test_generate_puzzle_uses_difficulty_clue_count(
+    monkeypatch, difficulty, expected_clues
+):
+    clue_counts = []
+    monkeypatch.setattr(sudoku_logic, "fill_board", lambda board: True)
+    monkeypatch.setattr(
+        sudoku_logic, "remove_cells", lambda board, clues: clue_counts.append(clues)
+    )
+
+    puzzle, solution = sudoku_logic.generate_puzzle(difficulty)
+
+    assert clue_counts == [expected_clues]
+    assert len(puzzle) == 9
+    assert len(solution) == 9
+
+
+def test_generate_puzzle_rejects_unknown_difficulty():
+    with pytest.raises(ValueError, match="Unknown difficulty"):
+        sudoku_logic.generate_puzzle("expert")
