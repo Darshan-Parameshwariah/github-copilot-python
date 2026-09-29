@@ -4,7 +4,7 @@
 - Add type hints and concise docstrings to Python functions and public classes.
 - Keep functions small and single-purpose; use clear, descriptive names.
 - Keep Sudoku rules and puzzle generation in `sudoku_logic.py`.
-- Keep Flask routes and request/response handling in a dedicated routes module.
+- Keep Flask routes and request/response handling organized in the Flask application module, while keeping Sudoku logic separate in sudoku_logic.py.
 - Keep browser code, styles, and templates in their existing frontend areas; put static assets under `static/`.
 - Avoid mixing route handling, puzzle logic, and frontend behavior in one file.
 - Add or update pytest tests for every feature and meaningful behavior change.
