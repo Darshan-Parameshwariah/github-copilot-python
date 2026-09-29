@@ -1,6 +1,7 @@
 // Client-side rendering and interaction for the Flask-backed Sudoku
 const SIZE = 9;
 const LEADERBOARD_KEY = 'sudokuLeaderboard.v1';
+const THEME_KEY = 'sudokuTheme.v1';
 const LEADERBOARD_LIMIT = 10;
 let puzzle = [];
 let validationRequest = 0;
@@ -69,6 +70,40 @@ function formatTime(totalSeconds) {
     : `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 }
 
+function setMessageTone(message, tone) {
+  message.classList.remove('message-error', 'message-success', 'message-info');
+  if (tone) message.classList.add(`message-${tone}`);
+}
+
+function applyTheme(theme) {
+  document.documentElement.dataset.theme = theme;
+  const toggle = document.getElementById('theme-toggle');
+  toggle.setAttribute('aria-pressed', String(theme === 'dark'));
+  toggle.textContent = theme === 'dark' ? 'Light mode' : 'Dark mode';
+}
+
+function initializeTheme() {
+  let theme;
+  try {
+    theme = window.localStorage.getItem(THEME_KEY);
+  } catch {
+    theme = null;
+  }
+  if (theme !== 'light' && theme !== 'dark') {
+    theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  }
+  applyTheme(theme);
+  document.getElementById('theme-toggle').addEventListener('click', () => {
+    const nextTheme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+    applyTheme(nextTheme);
+    try {
+      window.localStorage.setItem(THEME_KEY, nextTheme);
+    } catch {
+      // Theme switching remains available when browser storage is disabled.
+    }
+  });
+}
+
 function renderLeaderboard() {
   const body = document.getElementById('leaderboard-entries');
   body.replaceChildren();
@@ -129,7 +164,7 @@ function submitScore(event) {
   const name = sanitizeName(nameInput.value);
   const message = document.getElementById('message');
   if (!name) {
-    message.style.color = '#b42318';
+    setMessageTone(message, 'error');
     message.textContent = 'Enter a name to save your time.';
     nameInput.focus();
     return;
@@ -150,7 +185,7 @@ function submitScore(event) {
   const stored = qualifies ? saveLeaderboard() : true;
   document.getElementById('score-form').hidden = true;
   nameInput.value = '';
-  message.style.color = stored ? '#388e3c' : '#b42318';
+  setMessageTone(message, stored ? 'success' : 'error');
   message.textContent = !qualifies
     ? 'Great solve! This time did not make the Top 10.'
     : stored
@@ -269,7 +304,7 @@ async function newGame() {
     startTimer();
   } catch {
     if (currentGameRequest !== gameRequest) return;
-    message.style.color = '#b42318';
+    setMessageTone(message, 'error');
     message.textContent = 'Unable to start a new game. Please try again.';
   }
 }
@@ -290,7 +325,7 @@ async function checkSolution(showStatus = true) {
   if (currentRequest !== validationRequest || currentGame !== gameRequest) return;
   const msg = document.getElementById('message');
   if (data.error) {
-    msg.style.color = '#d32f2f';
+    setMessageTone(msg, 'error');
     msg.innerText = data.error;
     return;
   }
@@ -304,14 +339,14 @@ async function checkSolution(showStatus = true) {
     !input.disabled && input.value && incorrect.has(idx)
   );
   if (data.solved) {
-    msg.style.color = '#388e3c';
+    setMessageTone(msg, 'success');
     msg.innerText = 'Congratulations! You solved it!';
     completeGame();
   } else if (enteredIncorrect) {
-    msg.style.color = '#d32f2f';
+    setMessageTone(msg, 'error');
     msg.innerText = 'Some cells are incorrect.';
   } else if (showStatus) {
-    msg.style.color = '#d32f2f';
+    setMessageTone(msg, 'info');
     msg.innerText = data.complete ? 'Some cells are incorrect.' : 'Keep going; the puzzle is not complete yet.';
   } else {
     msg.innerText = '';
@@ -342,13 +377,15 @@ async function getHint() {
     await checkSolution(false);
     if (!message.textContent || message.textContent === 'Keep going; the puzzle is not complete yet.') {
       message.textContent = `Hint used (${data.hint_count}).`;
-      message.style.color = '#126b5b';
+      setMessageTone(message, 'info');
     }
   } catch (error) {
-    message.style.color = '#b42318';
+    setMessageTone(message, 'error');
     message.textContent = error.message;
   }
 }
+
+initializeTheme();
 
 // Wire buttons
 window.addEventListener('load', () => {
