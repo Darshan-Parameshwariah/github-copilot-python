@@ -27,17 +27,35 @@ def new_game():
 
 @app.route('/check', methods=['POST'])
 def check_solution():
-    data = request.json
-    board = data.get('board')
     solution = CURRENT.get('solution')
     if solution is None:
         return jsonify({'error': 'No game in progress'}), 400
+
+    data = request.get_json(silent=True)
+    board = data.get('board') if isinstance(data, dict) else None
+    if (
+        not isinstance(board, list)
+        or len(board) != sudoku_logic.SIZE
+        or any(not isinstance(row, list) or len(row) != sudoku_logic.SIZE for row in board)
+        or any(
+            type(cell) is not int or not 0 <= cell <= sudoku_logic.SIZE
+            for row in board
+            for cell in row
+        )
+    ):
+        return jsonify({'error': 'Board must be a 9x9 grid of numbers from 0 to 9'}), 400
+
     incorrect = []
     for i in range(sudoku_logic.SIZE):
         for j in range(sudoku_logic.SIZE):
             if board[i][j] != solution[i][j]:
                 incorrect.append([i, j])
-    return jsonify({'incorrect': incorrect})
+    complete = all(cell != sudoku_logic.EMPTY for row in board for cell in row)
+    return jsonify({
+        'incorrect': incorrect,
+        'complete': complete,
+        'solved': complete and not incorrect,
+    })
 
 if __name__ == '__main__':
     app.run(debug=True)

@@ -1,5 +1,6 @@
 import pytest
 
+import app as app_module
 from app import app
 
 
@@ -61,3 +62,46 @@ def test_new_rejects_unknown_difficulty(client):
 
     assert response.status_code == 400
     assert response.get_json() == {"error": "Unknown difficulty: expert"}
+
+
+def test_check_reports_incorrect_cells_and_completion(client, monkeypatch):
+    solution = [[1] * 9 for _ in range(9)]
+    monkeypatch.setitem(app_module.CURRENT, "solution", solution)
+    board = [row[:] for row in solution]
+    board[0][0] = 0
+    board[0][1] = 2
+
+    response = client.post("/check", json={"board": board})
+
+    assert response.status_code == 200
+    assert response.get_json() == {
+        "incorrect": [[0, 0], [0, 1]],
+        "complete": False,
+        "solved": False,
+    }
+
+
+def test_check_detects_a_solved_board(client, monkeypatch):
+    solution = [[1] * 9 for _ in range(9)]
+    monkeypatch.setitem(app_module.CURRENT, "solution", solution)
+
+    response = client.post("/check", json={"board": solution})
+
+    assert response.status_code == 200
+    assert response.get_json() == {
+        "incorrect": [],
+        "complete": True,
+        "solved": True,
+    }
+
+
+@pytest.mark.parametrize("board", [None, [], [[10] * 9 for _ in range(9)]])
+def test_check_rejects_invalid_board(client, monkeypatch, board):
+    monkeypatch.setitem(app_module.CURRENT, "solution", [[1] * 9 for _ in range(9)])
+
+    response = client.post("/check", json={"board": board})
+
+    assert response.status_code == 400
+    assert response.get_json() == {
+        "error": "Board must be a 9x9 grid of numbers from 0 to 9"
+    }
